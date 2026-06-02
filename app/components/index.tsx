@@ -4,18 +4,16 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import produce, { setAutoFreeze } from 'immer'
 import { useBoolean, useGetState } from 'ahooks'
-import useConversation from '@/hooks/use-conversation'
+import useConversation, { storageConversationIdKey } from '@/hooks/use-conversation'
 import Toast from '@/app/components/base/toast'
-import Sidebar from '@/app/components/sidebar'
 import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
-import { fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
-import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
+import { fetchAppParams, fetchChatList, sendChatMessage, updateFeedback } from '@/service'
+import type { ChatItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
 import Chat from '@/app/components/chat'
 import { setLocaleOnClient } from '@/i18n/client'
-import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
 import Loading from '@/app/components/base/loading'
 import { replaceVarWithValues, userInputsFormToPromptVariables } from '@/utils/prompt'
 import AppUnavailable from '@/app/components/app-unavailable'
@@ -29,8 +27,6 @@ export interface IMainProps {
 
 const Main: FC<IMainProps> = () => {
   const { t } = useTranslation()
-  const media = useBreakpoints()
-  const isMobile = media === MediaType.mobile
   const hasSetAppConfig = APP_ID && API_KEY
 
   /*
@@ -40,8 +36,6 @@ const Main: FC<IMainProps> = () => {
   const [isUnknownReason, setIsUnknownReason] = useState<boolean>(false)
   const [promptConfig, setPromptConfig] = useState<PromptConfig | null>(null)
   const [inited, setInited] = useState<boolean>(false)
-  // in mobile, show sidebar by click button
-  const [isShowSidebar, { setTrue: showSidebar, setFalse: hideSidebar }] = useBoolean(false)
   const [visionConfig, setVisionConfig] = useState<VisionSettings | undefined>({
     enabled: false,
     number_limits: 2,
@@ -82,7 +76,7 @@ const Main: FC<IMainProps> = () => {
     setExistConversationInfo,
   } = useConversation()
 
-  const [conversationIdChangeBecauseOfNew, setConversationIdChangeBecauseOfNew, getConversationIdChangeBecauseOfNew] = useGetState(false)
+  const [conversationIdChangeBecauseOfNew, setConversationIdChangeBecauseOfNew] = useGetState(false)
   const [isChatStarted, { setTrue: setChatStarted, setFalse: setChatNotStarted }] = useBoolean(false)
   const handleStartChat = (inputs: Record<string, any>) => {
     createNewChat()
@@ -97,6 +91,19 @@ const Main: FC<IMainProps> = () => {
 
     return isChatStarted
   })()
+
+  // single-conversation mode: skip the config/welcome scene and start the chat
+  // directly with empty inputs. Required prompt variables would block sending
+  // (checkCanSend), so they must be optional or removed in Dify Studio.
+  useEffect(() => {
+    if (inited && isNewConversation && !isChatStarted) {
+      const inputs: Record<string, any> = {}
+      promptConfig?.prompt_variables.forEach((item) => {
+        inputs[item.key] = ''
+      })
+      handleStartChat(inputs)
+    }
+  }, [inited])
 
   const conversationName = currConversationInfo?.name || t('app.chat.newChatDefaultName') as string
   const conversationIntroduction = currConversationInfo?.introduction || ''
@@ -148,25 +155,16 @@ const Main: FC<IMainProps> = () => {
           })
         })
         setChatList(newChatList)
+      }).catch(() => {
+        // stored conversation no longer exists on Dify side -> start fresh
+        setCurrConversationId('-1', APP_ID, false)
+        setChatList(generateNewChatListWithOpenStatement())
       })
     }
 
     if (isNewConversation && isChatStarted) { setChatList(generateNewChatListWithOpenStatement()) }
   }
   useEffect(handleConversationSwitch, [currConversationId, inited])
-
-  const handleConversationIdChange = (id: string) => {
-    if (id === '-1') {
-      createNewChat()
-      setConversationIdChangeBecauseOfNew(true)
-    }
-    else {
-      setConversationIdChangeBecauseOfNew(false)
-    }
-    // trigger handleConversationSwitch
-    setCurrConversationId(id, APP_ID)
-    hideSidebar()
-  }
 
   /*
   * chat info. chat is under conversation.
@@ -228,17 +226,10 @@ const Main: FC<IMainProps> = () => {
     }
     (async () => {
       try {
-        const [conversationData, appParams] = await Promise.all([fetchConversations(), fetchAppParams()])
-        // handle current conversation id
-        const { data: conversations, error } = conversationData as { data: ConversationItem[], error: string }
-        if (error) {
-          Toast.notify({ type: 'error', message: error })
-          throw new Error(error)
-          return
-        }
+        const appParams = await fetchAppParams()
+        // single-conversation mode: resume the conversation stored locally (if any)
         const _conversationId = getConversationIdFromStorage(APP_ID)
-        const currentConversation = conversations.find(item => item.id === _conversationId)
-        const isNotNewConversation = !!currentConversation
+        const isNotNewConversation = !!_conversationId
 
         // fetch new conversation info
         const { user_input_form, opening_statement: introduction, file_upload, system_parameters, suggested_questions = [] }: any = appParams
@@ -250,7 +241,7 @@ const Main: FC<IMainProps> = () => {
         })
         if (isNotNewConversation) {
           setExistConversationInfo({
-            name: currentConversation.name || t('app.chat.newChatDefaultName'),
+            name: t('app.chat.newChatDefaultName'),
             introduction,
             suggested_questions,
           })
@@ -274,7 +265,6 @@ const Main: FC<IMainProps> = () => {
           number_limits: file_upload?.number_limits,
           fileUploadConfig: file_upload?.fileUploadConfig,
         })
-        setConversationList(conversations as ConversationItem[])
 
         if (isNotNewConversation) { setCurrConversationId(_conversationId, APP_ID, false) }
 
@@ -307,7 +297,7 @@ const Main: FC<IMainProps> = () => {
     let emptyRequiredInput = false
     promptConfig.prompt_variables.forEach((item) => {
       if (item.required && !currInputs[item.key])
-        emptyRequiredInput = true
+      { emptyRequiredInput = true }
     })
 
     if (emptyRequiredInput) {
@@ -461,15 +451,6 @@ const Main: FC<IMainProps> = () => {
       async onCompleted(hasError?: boolean) {
         if (hasError) { return }
 
-        if (getConversationIdChangeBecauseOfNew()) {
-          const { data: allConversations }: any = await fetchConversations()
-          const newItem: any = await generationConversationName(allConversations[0].id)
-
-          const newAllConversations = produce(allConversations, (draft: any) => {
-            draft[0].name = newItem.name
-          })
-          setConversationList(newAllConversations as any)
-        }
         setConversationIdChangeBecauseOfNew(false)
         resetNewConversationInputs()
         setChatNotStarted()
@@ -636,16 +617,12 @@ const Main: FC<IMainProps> = () => {
     notify({ type: 'success', message: t('common.api.success') })
   }
 
-  const renderSidebar = () => {
-    if (!APP_ID || !APP_INFO || !promptConfig) { return null }
-    return (
-      <Sidebar
-        list={conversationList}
-        onCurrentIdChange={handleConversationIdChange}
-        currentId={currConversationId}
-        copyRight={APP_INFO.copyright || APP_INFO.title}
-      />
-    )
+  // single-conversation mode: forget the stored conversation and reload to start a fresh one
+  const handleRestartChat = () => {
+    const conversationIdInfo = globalThis.localStorage?.getItem(storageConversationIdKey) ? JSON.parse(globalThis.localStorage?.getItem(storageConversationIdKey) || '{}') : {}
+    delete conversationIdInfo[APP_ID]
+    globalThis.localStorage?.setItem(storageConversationIdKey, JSON.stringify(conversationIdInfo))
+    window.location.reload()
   }
 
   if (appUnavailable) { return <AppUnavailable isUnknownReason={isUnknownReason} errMessage={!hasSetAppConfig ? 'Please set APP_ID and API_KEY in config/index.tsx' : ''} /> }
@@ -656,20 +633,9 @@ const Main: FC<IMainProps> = () => {
     <div className='bg-gray-100'>
       <Header
         title={APP_INFO.title}
-        isMobile={isMobile}
-        onShowSideBar={showSidebar}
-        onCreateNewChat={() => handleConversationIdChange('-1')}
+        onRestart={handleRestartChat}
       />
       <div className="flex rounded-t-2xl bg-white overflow-hidden">
-        {/* sidebar */}
-        {!isMobile && renderSidebar()}
-        {isMobile && isShowSidebar && (
-          <div className='fixed inset-0 z-50' style={{ backgroundColor: 'rgba(35, 56, 118, 0.2)' }} onClick={hideSidebar} >
-            <div className='inline-block' onClick={e => e.stopPropagation()}>
-              {renderSidebar()}
-            </div>
-          </div>
-        )}
         {/* main */}
         <div className='flex-grow flex flex-col h-[calc(100vh_-_3rem)] overflow-y-auto'>
           <ConfigSence

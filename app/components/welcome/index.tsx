@@ -172,33 +172,33 @@ const Welcome: FC<IWelcomeProps> = ({
   }
 
   const canChat = () => {
-    const vars = promptConfig?.prompt_variables ?? [];
+    const vars = promptConfig?.prompt_variables ?? []
 
-    const hasEmptyRequired = vars.some(v => {
-      const isRequired = v?.required ?? true;
-      if (!isRequired) return false;
+    const hasEmptyRequired = vars.some((v) => {
+      const isRequired = v?.required ?? true
+      if (!isRequired) { return false }
 
-      const val = inputs?.[v.key];
+      const val = inputs?.[v.key]
 
-      if (typeof val === 'string') return val.trim() === '';
+      if (typeof val === 'string') { return val.trim() === '' }
 
-      return val === undefined || val === null;
-    });
+      return val === undefined || val === null
+    })
 
     if (hasEmptyRequired) {
-      logError(t('app.errorMessage.valueOfVarRequired'));
-      return false;
+      logError(t('app.errorMessage.valueOfVarRequired'))
+      return false
     }
 
-    return true;
-  };
+    return true
+  }
 
   const handleChat = () => {
     if (!canChat()) { return }
 
     Object.keys(inputs).forEach((key) => {
       if (!inputs[key])
-        delete inputs[key]
+      { delete inputs[key] }
     })
 
     onStartChat(inputs)
@@ -340,6 +340,10 @@ const Welcome: FC<IWelcomeProps> = ({
   }
 
   const renderHasSetInputs = () => {
+    // single-conversation mode: chat auto-starts with empty inputs, hide the
+    // "edit conversation settings" banner entirely
+    return null
+
     if ((!isPublicVersion && !canEditInputs) || !hasVar) { return null }
 
     return (
@@ -351,8 +355,8 @@ const Welcome: FC<IWelcomeProps> = ({
   }
 
   return (
-    <div className='relative mobile:min-h-[48px] tablet:min-h-[64px]'>
-      {hasSetInputs && renderHeader()}
+    <div className='relative'>
+      {/* conversation-name bar hidden in single-conversation mode: {hasSetInputs && renderHeader()} */}
       <div className='mx-auto pc:w-[794px] max-w-full mobile:w-full px-3.5'>
         {/*  Has't set inputs  */}
         {

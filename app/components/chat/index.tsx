@@ -176,12 +176,12 @@ const Chat: FC<IChatProps> = ({
       </div>
       {
         !isHideSendInput && (
-          <div className='fixed z-10 bottom-0 left-1/2 transform -translate-x-1/2 pc:ml-[122px] tablet:ml-[96px] mobile:ml-0 pc:w-[794px] tablet:w-[794px] max-w-full mobile:w-full px-3.5'>
+          <div className='fixed z-10 bottom-0 left-1/2 transform -translate-x-1/2 pc:w-[794px] tablet:w-[794px] max-w-full mobile:w-full px-3.5 pb-4'>
             <div className='p-[5.5px] max-h-[150px] bg-white border-[1.5px] border-gray-200 rounded-xl overflow-y-auto'>
               {
                 visionConfig?.enabled && (
                   <>
-                    <div className='absolute bottom-2 left-2 flex items-center'>
+                    <div className='absolute bottom-6 left-2 flex items-center'>
                       <ChatImageUploader
                         settings={visionConfig}
                         onUpload={onUpload}
@@ -223,7 +223,7 @@ const Chat: FC<IChatProps> = ({
                 onKeyDown={handleKeyDown}
                 autoSize
               />
-              <div className="absolute bottom-2 right-6 flex items-center h-8">
+              <div className="absolute bottom-6 right-6 flex items-center h-8">
                 <div className={`${s.count} mr-3 h-5 leading-5 text-sm bg-gray-50 text-gray-500 px-2 rounded`}>{query.trim().length}</div>
                 <Tooltip
                   selector='send-tip'

@@ -3,7 +3,7 @@ import produce from 'immer'
 import { useGetState } from 'ahooks'
 import type { ConversationItem } from '@/types/app'
 
-const storageConversationIdKey = 'conversationIdInfo'
+export const storageConversationIdKey = 'conversationIdInfo'
 
 type ConversationInfoType = Omit<ConversationItem, 'inputs' | 'id'>
 function useConversation() {

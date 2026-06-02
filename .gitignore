@@ -51,3 +51,7 @@ yarn.lock
 .serena
 # pmpm
 pnpm-lock.yaml
+
+# IDE / test artifacts
+.vs/
+.playwright-mcp/

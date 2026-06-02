@@ -40,10 +40,6 @@ export const sendChatMessage = async (
   }, { onData, onCompleted, onThought, onFile, onError, getAbortController, onMessageEnd, onMessageReplace, onNodeStarted, onWorkflowStarted, onWorkflowFinished, onNodeFinished })
 }
 
-export const fetchConversations = async () => {
-  return get('conversations', { params: { limit: 100, first_id: '' } })
-}
-
 export const fetchChatList = async (conversationId: string) => {
   return get('messages', { params: { conversation_id: conversationId, limit: 20, last_id: '' } })
 }
@@ -55,8 +51,4 @@ export const fetchAppParams = async () => {
 
 export const updateFeedback = async ({ url, body }: { url: string, body: Feedbacktype }) => {
   return post(url, { body })
-}
-
-export const generationConversationName = async (id: string) => {
-  return post(`conversations/${id}/name`, { body: { auto_generate: true } })
 }

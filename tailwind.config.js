@@ -3,6 +3,8 @@ module.exports = {
   content: [
     './app/**/*.{js,ts,jsx,tsx}',
     './components/**/*.{js,ts,jsx,tsx}',
+    './node_modules/streamdown/dist/*.js',
+    './node_modules/@streamdown/*/dist/*.js',
   ],
   theme: {
     typography: require('./typography'),
