@@ -14,6 +14,9 @@ export const APP_INFO: AppInfo = {
 export const isShowPrompt = false
 export const promptTemplate = 'I want you to act as a javascript console.'
 
+// placeholder of the user message input box
+export const inputPlaceholder = 'Escribe tu consulta sobre Gextor Contabilidad…'
+
 export const API_PREFIX = '/api'
 
 export const LOCALE_COOKIE_NAME = 'locale'

@@ -1,8 +1,9 @@
 # Sesión — Chatbot conversación única (Gextor Contabilidad)
 
-**Fecha:** 2026-06-02
-**Estado:** funcional, verificado en build de producción. **Sin commitear.**
+**Fecha:** 2026-06-02 / 2026-06-03
+**Estado:** funcional, verificado en build de producción.
 **Commit base original:** `33085b6608fe7174e0fb75e46c220348863b1c19`
+**Commit feature:** `687ad62` (conversación única + branding + streamdown v2)
 
 ## Objetivo
 
@@ -25,6 +26,17 @@ Convertir fork de Dify `webapp-conversation` en chatbot de consulta única para 
 6. **Barra "Nueva conversación" oculta** → `renderHasSetInputs`/`renderHeader` anulados en `app/components/welcome/index.tsx` (código conservado comentado).
 7. **Auto-arranque**: effect en `index.tsx` salta la pantalla de config/welcome, inicia chat con inputs vacíos. ⚠️ Variables de Dify deben ser opcionales.
 8. **streamdown 1.6.11 → 2.5.0** + plugins nuevos `@streamdown/mermaid`, `@streamdown/math`, `@streamdown/code` (aprobado por usuario). Wrapper con `plugins={{ code, math, mermaid }}`, import `streamdown/styles.css`, tokens shadcn en `globals.css`, paths plugins en tailwind content. Resultado: mermaid (graph/pie/xychart-beta), tablas con copiar/CSV/expandir, LaTeX `$$...$$` (inline `$` desactivado por diseño), Shiki, task lists.
+
+## Añadido tras el commit 687ad62 (2026-06-03)
+
+9. **Demo burbuja** `public/demo.html` (mismo puerto que el chatbot, Next la sirve estática):
+   - Landing simulada Gextor + widget burbuja (logo SVG sobre fondo blanco, panel iframe con carga perezosa, responsive móvil).
+   - Bloque "Prueba el asistente": 6 tarjetas de preguntas de ejemplo (tabla+CSV, tarta, barras, diagrama, pasos, fórmula). Click → abre chat e inyecta la pregunta en el textarea (solo mismo origen; fallback portapapeles en cross-origin).
+   - Para la web real: copiar bloque `<!-- widget burbuja chatbot -->` + CSS, cambiar `data-src` del iframe a la URL pública.
+   - ⚠️ `next start` indexa `public/` al arrancar — fichero nuevo en public requiere reiniciar server prod.
+10. **Placeholder input** configurable: `inputPlaceholder` en `config/index.ts`, consumido en `chat/index.tsx`.
+11. **Hook pre-commit** corregido: `pnpm lint-staged` → `npx lint-staged` (commit 687ad62).
+12. **Error mermaid diagnosticado** (no es bug frontend): el bot generó `E[Texto (con paréntesis)]` — paréntesis sin comillas rompen el parser. Regla para el prompt de Dify: etiquetas de nodos SIEMPRE entre comillas `A["Etiqueta"]`. Streamdown muestra error con "Show Code" sin romper el resto.
 
 ## Decisiones clave
 

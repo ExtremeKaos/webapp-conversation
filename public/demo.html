@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gextor — Demo burbuja chatbot</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #1f2a37; }
+
+    /* ====== página de ejemplo (sustituir por la web real) ====== */
+    header.site { display: flex; align-items: center; justify-content: space-between; padding: 16px 48px; border-bottom: 1px solid #e5e7eb; }
+    header.site .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+    header.site .brand img { width: 32px; height: 32px; }
+    header.site nav a { margin-left: 24px; text-decoration: none; color: #374151; font-size: 14px; }
+    .hero { padding: 96px 48px; text-align: center; background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%); }
+    .hero h1 { font-size: 40px; margin-bottom: 16px; }
+    .hero p { font-size: 18px; color: #6b7280; max-width: 560px; margin: 0 auto 32px; }
+    .hero .cta { display: inline-block; padding: 12px 28px; background: #1c64f2; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600; }
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding: 48px; max-width: 1100px; margin: 0 auto; }
+    .features .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; }
+    .features .card h3 { margin-bottom: 8px; font-size: 16px; }
+    .features .card p { font-size: 14px; color: #6b7280; }
+
+    /* ====== bloque de ejemplos ====== */
+    .examples { max-width: 1100px; margin: 0 auto; padding: 16px 48px 64px; }
+    .examples h2 { font-size: 26px; margin-bottom: 8px; }
+    .examples .intro { font-size: 15px; color: #4b5563; max-width: 760px; margin-bottom: 24px; }
+    .examples .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .examples .example {
+      text-align: left; font: inherit; font-size: 14px; color: #1f2a37;
+      border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px;
+      background: #f9fafb; cursor: pointer; transition: border-color .15s, background .15s;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .examples .example:hover { border-color: #1c64f2; background: #eff6ff; }
+    .examples .tag { font-size: 12px; font-weight: 600; color: #1a56db; }
+    .examples .feedback { margin-top: 16px; font-size: 13px; color: #046c4e; }
+    @media (max-width: 768px) { .examples .grid { grid-template-columns: 1fr; } }
+
+    /* ====== widget burbuja chatbot (copiar tal cual) ====== */
+    #gextor-chat-bubble {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      width: 60px; height: 60px; border-radius: 50%;
+      background: #fff; border: 1px solid #e5e7eb; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 24px rgba(28, 100, 242, .35);
+      transition: transform .15s ease;
+    }
+    #gextor-chat-bubble:hover { transform: scale(1.08); }
+    #gextor-chat-bubble img { width: 52px; height: 52px; }
+    #gextor-chat-bubble .close-icon { display: none; color: #1c64f2; font-size: 28px; line-height: 1; }
+    #gextor-chat-bubble.open .chat-icon { display: none; }
+    #gextor-chat-bubble.open .close-icon { display: block; }
+
+    #gextor-chat-panel {
+      position: fixed; bottom: 96px; right: 24px; z-index: 9998;
+      width: 420px; height: min(640px, calc(100vh - 120px));
+      border: 1px solid #e5e7eb; border-radius: 16px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, .18);
+      overflow: hidden; background: #fff;
+      opacity: 0; transform: translateY(12px); pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    #gextor-chat-panel.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    #gextor-chat-panel iframe { width: 100%; height: 100%; border: none; }
+
+    @media (max-width: 480px) {
+      #gextor-chat-panel { right: 0; bottom: 0; width: 100vw; height: 100vh; border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- página de ejemplo -->
+  <header class="site">
+    <div class="brand"><img src="/gextor-ia.svg" alt="Gextor">Gextor</div>
+    <nav>
+      <a href="#">Producto</a><a href="#">Precios</a><a href="#">Soporte</a><a href="#">Contacto</a>
+    </nav>
+  </header>
+  <section class="hero">
+    <h1>Gextor Contabilidad</h1>
+    <p>Software de gestión contable para empresas. Diario, IVA, modelos oficiales, tesorería y contabilidad analítica.</p>
+    <a class="cta" href="#">Solicitar demo</a>
+  </section>
+  <section class="features">
+    <div class="card"><h3>Diario e IVA</h3><p>Apuntes IC con cálculo automático de IVA y vencimientos.</p></div>
+    <div class="card"><h3>Modelos oficiales</h3><p>303, 340, 347, 349 generados desde tus datos.</p></div>
+    <div class="card"><h3>Analítica</h3><p>Centros de coste e informes de gestión.</p></div>
+  </section>
+
+  <!-- ====== ejemplos de preguntas para el asistente ====== -->
+  <section class="examples">
+    <h2>Prueba el asistente</h2>
+    <p class="intro">
+      El asistente no solo responde con texto: puede generar <strong>tablas descargables en CSV</strong>,
+      <strong>gráficos</strong>, <strong>diagramas de procesos</strong>, <strong>fórmulas</strong> y
+      <strong>listas de pasos</strong>. Haz clic en una pregunta para enviarla al chat:
+    </p>
+    <div class="grid">
+      <button class="example" data-question="Dame un ejemplo de asiento de una venta con IVA en una tabla">
+        <span class="tag">📊 Tabla + CSV</span>
+        Dame un ejemplo de asiento de una venta con IVA en una tabla
+      </button>
+      <button class="example" data-question="Muéstrame en un gráfico de tarta la distribución típica de gastos de una pyme">
+        <span class="tag">🥧 Gráfico de tarta</span>
+        Muéstrame en un gráfico de tarta la distribución típica de gastos de una pyme
+      </button>
+      <button class="example" data-question="Genera un gráfico de barras de ejemplo comparando ventas por trimestre">
+        <span class="tag">📈 Gráfico de barras</span>
+        Genera un gráfico de barras de ejemplo comparando ventas por trimestre
+      </button>
+      <button class="example" data-question="Explícame con un diagrama el proceso de registro de una factura de venta en GEXTOR">
+        <span class="tag">🔀 Diagrama de flujo</span>
+        Explícame con un diagrama el proceso de registro de una factura de venta
+      </button>
+      <button class="example" data-question="¿Cómo creo una empresa en GEXTOR Contabilidad? Dame los pasos">
+        <span class="tag">✅ Pasos guiados</span>
+        ¿Cómo creo una empresa en GEXTOR Contabilidad?
+      </button>
+      <button class="example" data-question="¿Cómo se calcula la cuota de amortización lineal? Muestra la fórmula">
+        <span class="tag">🧮 Fórmulas</span>
+        ¿Cómo se calcula la cuota de amortización lineal?
+      </button>
+    </div>
+    <p id="example-feedback" class="feedback" hidden>Pregunta copiada — pégala en el chat.</p>
+  </section>
+
+  <!-- ====== widget burbuja chatbot (copiar este bloque + CSS) ====== -->
+  <button id="gextor-chat-bubble" aria-label="Abrir asistente">
+    <img class="chat-icon" src="/gextor-ia.svg" alt="">
+    <span class="close-icon">&times;</span>
+  </button>
+  <div id="gextor-chat-panel">
+    <!-- src: URL del chatbot desplegado. Carga perezosa: se asigna al primer clic. -->
+    <iframe data-src="/" title="Asistente Gextor Contabilidad" allow="clipboard-write"></iframe>
+  </div>
+  <script>
+    (function () {
+      const bubble = document.getElementById('gextor-chat-bubble')
+      const panel = document.getElementById('gextor-chat-panel')
+      const iframe = panel.querySelector('iframe')
+      const feedback = document.getElementById('example-feedback')
+
+      const openChat = () => {
+        if (!iframe.src) iframe.src = iframe.dataset.src // lazy load
+        bubble.classList.add('open')
+        panel.classList.add('open')
+      }
+      const toggleChat = () => {
+        if (!iframe.src) iframe.src = iframe.dataset.src
+        bubble.classList.toggle('open')
+        panel.classList.toggle('open')
+      }
+      bubble.addEventListener('click', toggleChat)
+
+      // Inyecta la pregunta en la caja del chat. Solo funciona si el iframe es
+      // del MISMO ORIGEN (PoC). En cross-origin cae al portapapeles.
+      const setChatInput = (text) => {
+        const doc = iframe.contentDocument
+        const ta = doc && doc.querySelector('textarea.rc-textarea')
+        if (!ta) return false
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set
+        setter.call(ta, text)
+        ta.dispatchEvent(new Event('input', { bubbles: true })) // que React se entere
+        ta.focus()
+        return true
+      }
+
+      document.querySelectorAll('.example').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const question = btn.dataset.question
+          openChat()
+          // el iframe puede estar aún cargando: reintenta hasta 5s
+          let tries = 0
+          const timer = setInterval(() => {
+            tries++
+            let done = false
+            try { done = setChatInput(question) } catch (e) { /* cross-origin */ }
+            if (done || tries > 25) {
+              clearInterval(timer)
+              if (!done) {
+                navigator.clipboard && navigator.clipboard.writeText(question)
+                feedback.hidden = false
+                setTimeout(() => { feedback.hidden = true }, 4000)
+              }
+            }
+          }, 200)
+        })
+      })
+    })()
+  </script>
+
+</body>
+</html>
