@@ -1,9 +1,10 @@
 # Sesión — Chatbot conversación única (Gextor Contabilidad)
 
 **Fecha:** 2026-06-02 / 2026-06-03
-**Estado:** funcional, verificado en build de producción.
+**Estado:** funcional, verificado en build de producción. Desplegado en Vercel con Basic Auth.
 **Commit base original:** `33085b6608fe7174e0fb75e46c220348863b1c19`
 **Commit feature:** `687ad62` (conversación única + branding + streamdown v2)
+**Commits deploy:** `8c187b9` (demo), `3b10208` (fix Vercel lockfile), `fd8b482` + `e7bb04d` (Basic Auth)
 
 ## Objetivo
 
@@ -38,6 +39,16 @@ Convertir fork de Dify `webapp-conversation` en chatbot de consulta única para 
 11. **Hook pre-commit** corregido: `pnpm lint-staged` → `npx lint-staged` (commit 687ad62).
 12. **Error mermaid diagnosticado** (no es bug frontend): el bot generó `E[Texto (con paréntesis)]` — paréntesis sin comillas rompen el parser. Regla para el prompt de Dify: etiquetas de nodos SIEMPRE entre comillas `A["Etiqueta"]`. Streamdown muestra error con "Show Code" sin romper el resto.
 
+## Deploy Vercel + Basic Auth (sesión 2026-06-03, tarde)
+
+13. **Fix build Vercel**: fallaba con `ERR_PNPM_OUTDATED_LOCKFILE` (pnpm-lock.yaml del upstream tenía `eslint-config-next@14.2.32` vs `~15.5.9` en package.json). Solución: borrado `pnpm-lock.yaml` (commit `3b10208`) → Vercel detecta `package-lock.json` (al día, resuelve 15.5.19) y usa npm.
+14. **Basic Auth para PoC** (`middleware.ts` nuevo, commits `fd8b482` + `e7bb04d` endurecido tras security review):
+    - Protege todo (páginas, demo.html, API) salvo `_next/static|_next/image|favicon.ico`.
+    - Credenciales en env vars `BASIC_AUTH_USER` / `BASIC_AUTH_PASSWORD` (añadidas a `.env.example`).
+    - **Fail-closed**: en producción (`NODE_ENV === 'production'`) sin env vars → 503. En local sin vars → abierta.
+    - **Timing-safe**: compara hashes SHA-256 (Web Crypto, edge runtime) en tiempo constante.
+    - ⚠️ Basic Auth NO funciona en iframe cross-origin (navegador bloquea prompt). Vale para PoC en dominio Vercel (demo.html mismo origen). Para incrustar en web del cliente → cambiar a token en URL + cookie.
+
 ## Decisiones clave
 
 - Conversación persiste entre visitas (localStorage). Para chat limpio por visita: ignorar `getConversationIdFromStorage` en init de `index.tsx`.
@@ -46,7 +57,8 @@ Convertir fork de Dify `webapp-conversation` en chatbot de consulta única para 
 
 ## Pendiente
 
-- [ ] **Commit** de todo (working tree entero sin commitear).
+- [ ] **Vercel: configurar `BASIC_AUTH_USER` y `BASIC_AUTH_PASSWORD`** en Settings → Environment Variables (Production). Sin ellas el deploy actual (`e7bb04d` ya pusheado) responde 503.
+- [ ] Verificar deploy Vercel tras configurar env vars (login funciona, chat conecta con Dify — recordar también `NEXT_PUBLIC_APP_ID/KEY/API_URL` en Vercel).
 - [ ] Usuario: quitar coletilla `----\nModo de recuperación usado: {{retrieval_mode}}` del nodo Answer en Dify Studio.
 - [ ] Usuario: añadir prompt de formato al system prompt de Dify (propuesto en conversación: tablas, mermaid, $$ solo bloque, importes formato español, prohibir headings para notas).
 - [ ] Al desplegar en iframe cross-domain: `disable_session_same_site: true`.
