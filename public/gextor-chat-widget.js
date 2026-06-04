@@ -6,7 +6,7 @@
  *
  *   <script>
  *     window.GextorChatConfig = {
- *       chatUrl: 'https://chatbot.midominio.com',          // URL del chatbot desplegado
+ *       chatUrl: 'https://chatbot.midominio.com/chat',     // URL del chat desplegado (ruta /chat)
  *       getToken: () => fetch('/api/chat-token')           // JWT firmado por TU backend
  *         .then(r => r.text()),                            //  (string o Promise<string>)
  *     }
@@ -27,9 +27,9 @@
   var userConfig = window.GextorChatConfig || {}
 
   var config = {
-    chatUrl: userConfig.chatUrl || (document.currentScript && document.currentScript.src.replace(/\/[^/]*$/, '')) || '',
+    chatUrl: userConfig.chatUrl || (document.currentScript && document.currentScript.src.replace(/\/[^/]*$/, '/chat')) || '',
     getToken: userConfig.getToken || null, // función (sync/async) o string JWT
-    logoUrl: userConfig.logoUrl || null, // por defecto: <chatUrl>/gextor-ia.svg
+    logoUrl: userConfig.logoUrl || null, // por defecto: <origin del chat>/gextor-ia.svg
     title: userConfig.title || 'Asistente Gextor Contabilidad',
     zIndex: userConfig.zIndex || 9998,
   }
@@ -40,7 +40,7 @@
   }
 
   var chatOrigin = new URL(config.chatUrl, window.location.href).origin
-  var logoUrl = config.logoUrl || (config.chatUrl.replace(/\/$/, '') + '/gextor-ia.svg')
+  var logoUrl = config.logoUrl || (chatOrigin + '/gextor-ia.svg') // assets estáticos cuelgan del origin, no de la ruta del chat
 
   /* ---------- estilos ---------- */
   var style = document.createElement('style')

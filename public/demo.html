@@ -104,7 +104,7 @@
          Ej.: getToken: () => fetch('/api/chat-token').then(r => r.text())
        Para esta demo: token de prueba generado con `node scripts/make-test-jwt.mjs`. */
     window.GextorChatConfig = {
-      chatUrl: window.location.origin,
+      chatUrl: `${window.location.origin}/chat`,
       getToken: () => 'eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnRfaWQiOiJ0ZW5hbnQtMDAxIiwiZW1wcmVzYSI6IkVtcHJlc2EgRGVtbyBTTCIsInVzZXJfaWQiOiJ1LTQyIiwidXNlcl9yb2wiOiJjb250YWJsZSIsInN1YiI6InVzdWFyaW8tZGVtby0xIiwiaXNzIjoiZ2V4dG9yLWhvc3QiLCJhdWQiOiJnZXh0b3ItY2hhdGJvdCIsImlhdCI6MTc4MDU5ODM4MSwiZXhwIjoxNzgwNjQxNTgxfQ._6YqNpchr2adx2493zLsqQ6ajaBDorizUM7LfVIzlvc',
     }
   </script>

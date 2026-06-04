@@ -14,6 +14,15 @@ function digestsEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0
 }
 
+// `/` sirve demo.html; ambas rutas quedan tras Basic Auth.
+// El resto del dominio (chat /chat, widget.js, API) queda fuera del matcher:
+// lo protege la sesión JWT del host y debe ser accesible desde webs externas.
+function serve(req: NextRequest) {
+  if (req.nextUrl.pathname === '/')
+  { return NextResponse.rewrite(new URL('/demo.html', req.url)) }
+  return NextResponse.next()
+}
+
 export async function middleware(req: NextRequest) {
   const user = process.env.BASIC_AUTH_USER
   const password = process.env.BASIC_AUTH_PASSWORD
@@ -26,7 +35,7 @@ export async function middleware(req: NextRequest) {
       })
     }
     // En desarrollo local, sin protección
-    return NextResponse.next()
+    return serve(req)
   }
 
   const auth = req.headers.get('authorization')
@@ -37,7 +46,7 @@ export async function middleware(req: NextRequest) {
       sha256(decoded),
     ])
     if (digestsEqual(expected, received))
-    { return NextResponse.next() }
+    { return serve(req) }
   }
 
   return new NextResponse('Authentication required', {
@@ -47,5 +56,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/', '/demo.html'],
 }
