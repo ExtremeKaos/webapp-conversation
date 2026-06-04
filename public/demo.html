@@ -35,39 +35,9 @@
     }
     .examples .example:hover { border-color: #1c64f2; background: #eff6ff; }
     .examples .tag { font-size: 12px; font-weight: 600; color: #1a56db; }
-    .examples .feedback { margin-top: 16px; font-size: 13px; color: #046c4e; }
     @media (max-width: 768px) { .examples .grid { grid-template-columns: 1fr; } }
 
-    /* ====== widget burbuja chatbot (copiar tal cual) ====== */
-    #gextor-chat-bubble {
-      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
-      width: 60px; height: 60px; border-radius: 50%;
-      background: #fff; border: 1px solid #e5e7eb; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 8px 24px rgba(28, 100, 242, .35);
-      transition: transform .15s ease;
-    }
-    #gextor-chat-bubble:hover { transform: scale(1.08); }
-    #gextor-chat-bubble img { width: 52px; height: 52px; }
-    #gextor-chat-bubble .close-icon { display: none; color: #1c64f2; font-size: 28px; line-height: 1; }
-    #gextor-chat-bubble.open .chat-icon { display: none; }
-    #gextor-chat-bubble.open .close-icon { display: block; }
-
-    #gextor-chat-panel {
-      position: fixed; bottom: 96px; right: 24px; z-index: 9998;
-      width: 420px; height: min(640px, calc(100vh - 120px));
-      border: 1px solid #e5e7eb; border-radius: 16px;
-      box-shadow: 0 16px 48px rgba(0, 0, 0, .18);
-      overflow: hidden; background: #fff;
-      opacity: 0; transform: translateY(12px); pointer-events: none;
-      transition: opacity .2s ease, transform .2s ease;
-    }
-    #gextor-chat-panel.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
-    #gextor-chat-panel iframe { width: 100%; height: 100%; border: none; }
-
-    @media (max-width: 480px) {
-      #gextor-chat-panel { right: 0; bottom: 0; width: 100vw; height: 100vh; border-radius: 0; }
-    }
+    /* (el CSS de la burbuja vive dentro de gextor-chat-widget.js) */
   </style>
 </head>
 <body>
@@ -124,72 +94,30 @@
         ¿Cómo se calcula la cuota de amortización lineal?
       </button>
     </div>
-    <p id="example-feedback" class="feedback" hidden>Pregunta copiada — pégala en el chat.</p>
   </section>
 
-  <!-- ====== widget burbuja chatbot (copiar este bloque + CSS) ====== -->
-  <button id="gextor-chat-bubble" aria-label="Abrir asistente">
-    <img class="chat-icon" src="/gextor-ia.svg" alt="">
-    <span class="close-icon">&times;</span>
-  </button>
-  <div id="gextor-chat-panel">
-    <!-- src: URL del chatbot desplegado. Carga perezosa: se asigna al primer clic. -->
-    <iframe data-src="/" title="Asistente Gextor Contabilidad" allow="clipboard-write"></iframe>
-  </div>
+  <!-- ====== integración del chatbot: copiar estos DOS bloques en la web real ====== -->
   <script>
-    (function () {
-      const bubble = document.getElementById('gextor-chat-bubble')
-      const panel = document.getElementById('gextor-chat-panel')
-      const iframe = panel.querySelector('iframe')
-      const feedback = document.getElementById('example-feedback')
+    /* Config del widget. En producción:
+       - chatUrl: URL pública del chatbot desplegado (p.ej. https://chatbot.vercel.app)
+       - getToken: pedir el JWT a TU backend (firmado en servidor, NUNCA en el navegador).
+         Ej.: getToken: () => fetch('/api/chat-token').then(r => r.text())
+       Para esta demo: token de prueba generado con `node scripts/make-test-jwt.mjs`. */
+    window.GextorChatConfig = {
+      chatUrl: window.location.origin,
+      getToken: () => 'eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnRfaWQiOiJ0ZW5hbnQtMDAxIiwiZW1wcmVzYSI6IkVtcHJlc2EgRGVtbyBTTCIsInVzZXJfaWQiOiJ1LTQyIiwidXNlcl9yb2wiOiJjb250YWJsZSIsInN1YiI6InVzdWFyaW8tZGVtby0xIiwiaXNzIjoiZ2V4dG9yLWhvc3QiLCJhdWQiOiJnZXh0b3ItY2hhdGJvdCIsImlhdCI6MTc4MDU5ODM4MSwiZXhwIjoxNzgwNjQxNTgxfQ._6YqNpchr2adx2493zLsqQ6ajaBDorizUM7LfVIzlvc',
+    }
+  </script>
+  <script src="/gextor-chat-widget.js" defer></script>
+  <!-- ====== fin integración ====== -->
 
-      const openChat = () => {
-        if (!iframe.src) iframe.src = iframe.dataset.src // lazy load
-        bubble.classList.add('open')
-        panel.classList.add('open')
-      }
-      const toggleChat = () => {
-        if (!iframe.src) iframe.src = iframe.dataset.src
-        bubble.classList.toggle('open')
-        panel.classList.toggle('open')
-      }
-      bubble.addEventListener('click', toggleChat)
-
-      // Inyecta la pregunta en la caja del chat. Solo funciona si el iframe es
-      // del MISMO ORIGEN (PoC). En cross-origin cae al portapapeles.
-      const setChatInput = (text) => {
-        const doc = iframe.contentDocument
-        const ta = doc && doc.querySelector('textarea.rc-textarea')
-        if (!ta) return false
-        const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set
-        setter.call(ta, text)
-        ta.dispatchEvent(new Event('input', { bubbles: true })) // que React se entere
-        ta.focus()
-        return true
-      }
-
+  <script>
+    // tarjetas de ejemplo de la demo: abren el chat e inyectan la pregunta
+    document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.example').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const question = btn.dataset.question
-          openChat()
-          // el iframe puede estar aún cargando: reintenta hasta 5s
-          let tries = 0
-          const timer = setInterval(() => {
-            tries++
-            let done = false
-            try { done = setChatInput(question) } catch (e) { /* cross-origin */ }
-            if (done || tries > 25) {
-              clearInterval(timer)
-              if (!done) {
-                navigator.clipboard && navigator.clipboard.writeText(question)
-                feedback.hidden = false
-                setTimeout(() => { feedback.hidden = true }, 4000)
-              }
-            }
-          }, 200)
-        })
+        btn.addEventListener('click', () => window.GextorChat.ask(btn.dataset.question))
       })
-    })()
+    })
   </script>
 
 </body>
