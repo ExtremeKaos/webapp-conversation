@@ -39,7 +39,9 @@ const tenantId = getArg('tenant', 'tenant-001')
 const empresa = getArg('empresa', 'Empresa Demo SL')
 const userId = getArg('user-id', 'u-42')
 const userRol = getArg('rol', 'contable')
-const expiresIn = getArg('exp', '1h')
+// PoC/dev: vigencia larga para no regenerar el token de demo.html cada hora.
+// En producción el host firma tokens de vida corta (minutos/horas).
+const expiresIn = getArg('exp', '150d')
 
 async function main() {
   const token = await new SignJWT({ tenant_id: tenantId, empresa, user_id: userId, user_rol: userRol })

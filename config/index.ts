@@ -3,7 +3,7 @@ export const APP_ID = `${process.env.NEXT_PUBLIC_APP_ID}`
 export const API_KEY = `${process.env.NEXT_PUBLIC_APP_KEY}`
 export const API_URL = `${process.env.NEXT_PUBLIC_API_URL}`
 export const APP_INFO: AppInfo = {
-  title: 'Gextor Contabilidad',
+  title: 'Gextor IA',
   description: '',
   copyright: '',
   privacy_policy: '',
@@ -15,7 +15,7 @@ export const isShowPrompt = false
 export const promptTemplate = 'I want you to act as a javascript console.'
 
 // placeholder of the user message input box
-export const inputPlaceholder = 'Escribe tu consulta sobre Gextor Contabilidad…'
+export const inputPlaceholder = 'Escribe tu consulta sobre Gextor'
 
 export const API_PREFIX = '/api'
 
