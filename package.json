@@ -40,6 +40,7 @@
     "i18next": "^23.16.4",
     "i18next-resources-to-backend": "^1.2.1",
     "immer": "^9.0.19",
+    "jose": "^6.2.3",
     "js-cookie": "^3.0.1",
     "katex": "^0.16.21",
     "lodash-es": "^4.17.21",

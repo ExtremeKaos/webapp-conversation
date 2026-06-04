@@ -1,10 +1,13 @@
 import type { NextRequest } from 'next/server'
-import { client, getInfo } from '@/app/api/utils/common'
+import { client, getUserContext } from '@/app/api/utils/common'
 
 export async function POST(request: NextRequest) {
+  const context = await getUserContext(request)
+  if (context instanceof Response) { return context }
+  const { user } = context
+
   try {
     const formData = await request.formData()
-    const { user } = getInfo(request)
     formData.append('user', user)
     const res = await client.fileUpload(formData)
     return new Response(res.data.id as any)

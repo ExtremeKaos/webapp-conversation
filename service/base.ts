@@ -1,4 +1,5 @@
 import { API_PREFIX } from '@/config'
+import { getSessionToken } from '@/service/auth'
 import Toast from '@/app/components/base/toast'
 import type { AnnotationReply, MessageEnd, MessageReplace, ThoughtItem } from '@/app/components/chat/type'
 import type { VisionFile } from '@/types/app'
@@ -246,8 +247,19 @@ const handleStream = (
   read()
 }
 
+// per-request headers: clone the shared base Headers and attach the in-memory
+// session token (Authorization: Bearer) when present
+const buildHeaders = (headers: Headers) => {
+  const result = new Headers(headers)
+  const sessionToken = getSessionToken()
+  if (sessionToken) { result.set('Authorization', `Bearer ${sessionToken}`) }
+
+  return result
+}
+
 const baseFetch = (url: string, fetchOptions: any, { needAllResponseContent }: IOtherOptions) => {
   const options = Object.assign({}, baseOptions, fetchOptions)
+  options.headers = buildHeaders(options.headers)
 
   const urlPrefix = API_PREFIX
 
@@ -336,6 +348,10 @@ export const upload = (fetchOptions: any): Promise<any> => {
     ...defaultOptions,
     ...fetchOptions,
   }
+  const sessionToken = getSessionToken()
+  if (sessionToken) {
+    options.headers = { ...options.headers, Authorization: `Bearer ${sessionToken}` }
+  }
   return new Promise((resolve, reject) => {
     const xhr = options.xhr
     xhr.open(options.method, options.url)
@@ -373,6 +389,7 @@ export const ssePost = (
   const options = Object.assign({}, baseOptions, {
     method: 'POST',
   }, fetchOptions)
+  options.headers = buildHeaders(options.headers)
 
   const urlPrefix = API_PREFIX
   const urlWithPrefix = `${urlPrefix}${url.startsWith('/') ? url : `/${url}`}`

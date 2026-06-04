@@ -9,6 +9,8 @@ import Toast from '@/app/components/base/toast'
 import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
 import { fetchAppParams, fetchChatList, sendChatMessage, updateFeedback } from '@/service'
+import type { AuthInitResult } from '@/service/auth'
+import { initHostAuth } from '@/service/auth'
 import type { ChatItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
@@ -34,6 +36,8 @@ const Main: FC<IMainProps> = () => {
   */
   const [appUnavailable, setAppUnavailable] = useState<boolean>(false)
   const [isUnknownReason, setIsUnknownReason] = useState<boolean>(false)
+  // host-injected JWT auth: 'pending' until the handshake with the host resolves
+  const [authStatus, setAuthStatus] = useState<AuthInitResult | 'pending'>('pending')
   const [promptConfig, setPromptConfig] = useState<PromptConfig | null>(null)
   const [inited, setInited] = useState<boolean>(false)
   const [visionConfig, setVisionConfig] = useState<VisionSettings | undefined>({
@@ -218,8 +222,15 @@ const Main: FC<IMainProps> = () => {
     return []
   }
 
-  // init
+  // auth handshake with the host (postMessage / WebView2) BEFORE any API call
   useEffect(() => {
+    initHostAuth().then(setAuthStatus)
+  }, [])
+
+  // init — waits until the auth handshake has succeeded (or auth is disabled)
+  useEffect(() => {
+    if (authStatus !== 'ready' && authStatus !== 'disabled') { return }
+
     if (!hasSetAppConfig) {
       setAppUnavailable(true)
       return
@@ -280,7 +291,7 @@ const Main: FC<IMainProps> = () => {
         }
       }
     })()
-  }, [])
+  }, [authStatus])
 
   const [isResponding, { setTrue: setRespondingTrue, setFalse: setRespondingFalse }] = useBoolean(false)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
@@ -623,6 +634,18 @@ const Main: FC<IMainProps> = () => {
     delete conversationIdInfo[APP_ID]
     globalThis.localStorage?.setItem(storageConversationIdKey, JSON.stringify(conversationIdInfo))
     window.location.reload()
+  }
+
+  // auth failures: the host did not provide a (valid) token
+  if (authStatus === 'timeout' || authStatus === 'rejected') {
+    return (
+      <AppUnavailable
+        isUnknownReason={false}
+        errMessage={authStatus === 'rejected'
+          ? 'Autenticación rechazada: el token recibido del host no es válido.'
+          : 'No se ha recibido la autenticación del host. Abre el asistente desde la aplicación.'}
+      />
+    )
   }
 
   if (appUnavailable) { return <AppUnavailable isUnknownReason={isUnknownReason} errMessage={!hasSetAppConfig ? 'Please set APP_ID and API_KEY in config/index.tsx' : ''} /> }
