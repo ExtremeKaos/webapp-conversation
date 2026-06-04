@@ -19,6 +19,10 @@ export const userInputsFormToPromptVariables = (useInputs: UserInputFormItem[] |
       return [type === 'text-input' ? 'string' : type, item[type]]
     })()
 
+    // hidden variables (e.g. identity inputs injected server-side from the
+    // host JWT) must not show up in the welcome form
+    if (content.hide) { return }
+
     if (type === 'string' || type === 'paragraph') {
       promptVariables.push({
         key: content.variable,

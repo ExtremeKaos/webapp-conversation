@@ -97,12 +97,15 @@ const Main: FC<IMainProps> = () => {
   })()
 
   // single-conversation mode: skip the config/welcome scene and start the chat
-  // directly with empty inputs. Required prompt variables would block sending
-  // (checkCanSend), so they must be optional or removed in Dify Studio.
+  // directly with empty inputs — UNLESS Dify declares required variables
+  // (e.g. the `modulo` select): in that case the welcome scene stays visible
+  // so the user fills them before starting.
   useEffect(() => {
     if (inited && isNewConversation && !isChatStarted) {
+      const vars = promptConfig?.prompt_variables || []
+      if (vars.some(v => v.required)) { return }
       const inputs: Record<string, any> = {}
-      promptConfig?.prompt_variables.forEach((item) => {
+      vars.forEach((item) => {
         inputs[item.key] = ''
       })
       handleStartChat(inputs)
